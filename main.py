@@ -36,7 +36,7 @@ class HatCmsApp:
         ft.dropdown.Option(key=entry_key, text=entry["label"])
         for entry_key, entry in ENTRY_DEFINITIONS.items()
       ],
-      on_change=self.handle_entry_change,
+      on_select=self.handle_entry_change,
     )
 
     self.status_text = ft.Text(value="", selectable=True)
