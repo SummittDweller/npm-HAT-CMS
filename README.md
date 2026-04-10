@@ -44,6 +44,9 @@ The Python CMS dependencies are installed automatically the first time you run t
 
 The app opens a local content editor that writes markdown files directly into the Hugo site.
 
+- The Markdown Preview panel has been removed.
+- For Event entries, the `Body` editor is shown in the right-hand column.
+
 ## Build The Site
 
 ```bash
@@ -100,9 +103,11 @@ Other content types (Posts, Plans, Education, Let's Moove page, About page, Cale
 ### Content Type Details
 
 **Event (Markdown)**
-- Fields: Title, Publish Date, Location, Expiry Date, Body, Filename Slug, Draft
+- Fields: Title, Publish Date, Event Date, Start Time, Location, Event Details (PDF), Expiry Date, Body, Filename Slug, Draft
 - Filenames: auto-generated as `YYYY-MM-DD_slug.md` with date prefix
 - Output: `site/content/event/`
+- Optional Event Details PDF output: `site/static/pdfs/<event-stem>-details.pdf`
+- Event frontmatter key for embedded details: `eventDetailsPdf`
 
 **Document (PDF)**
 - Fields: Title, Date, PDF File, Filename Slug, Draft
@@ -140,14 +145,21 @@ Document entries support embedded PDF viewing:
 - Markdown content embeds the PDF via `<embed>` tag pointing to the relative path
 - On build, PDFs are included in `dist/pdfs/` for serving
 
+Event entries also support optional embedded PDF details:
+- Select `Event Details (PDF)` in the Event form
+- The PDF is copied to `site/static/pdfs/<event-stem>-details.pdf`
+- Event frontmatter gets `eventDetailsPdf: /pdfs/<event-stem>-details.pdf`
+- Event single pages render an embedded "Event Details" section when present
+
 ### Google Calendar Sync (Events)
 
 Event saves can now create a Google Calendar event automatically.
 
 - Sync target: the calendar currently embedded in `site/content/calendar.md` (auto-detected)
 - Event status in Google Calendar: `confirmed`
-- If `startTime` and `endTime` are provided, a timed event is created
+- If `startTime` is provided, a timed event is created
 - If no start time is provided, an all-day event is created
+- Timed events default to a 1-hour duration when no end time is provided
 
 Create credentials (API key is not enough for event creation):
 

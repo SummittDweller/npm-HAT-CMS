@@ -16,8 +16,8 @@ ENTRY_DEFINITIONS = {
       {"name": "publishDate", "label": "Publish Date", "type": "datetime", "required": True, "hint": "Example: 2026-04-08T10:30:00-05:00"},
       {"name": "date", "label": "Event Date", "type": "date", "required": False, "hint": "Example: 2026-04-08"},
       {"name": "startTime", "label": "Start Time", "type": "time", "required": False},
-      {"name": "endTime", "label": "End Time", "type": "time", "required": False},
       {"name": "location", "label": "Location", "type": "string", "required": False},
+      {"name": "event_details_pdf", "label": "Event Details (PDF)", "type": "pdf", "required": False, "store": False, "hint": "Optional local PDF file."},
       {"name": "expiryDate", "label": "Expiry Date", "type": "date", "required": False, "hint": "Example: 2026-12-31"},
       {"name": "body", "label": "Body", "type": "markdown", "required": False, "store": False},
       {"name": "filename_slug", "label": "Filename Slug", "type": "string", "required": False, "store": False, "hint": "Optional override for the generated filename slug."},
@@ -218,6 +218,12 @@ def build_frontmatter(entry_key, values):
       continue
 
     frontmatter[field["name"]] = raw_text
+
+  # Event details PDF path is injected during save when a local file is selected.
+  if entry_key == "event":
+    details_pdf = str(values.get("eventDetailsPdf") or "").strip()
+    if details_pdf:
+      frontmatter["eventDetailsPdf"] = details_pdf
 
   return frontmatter
 

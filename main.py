@@ -72,17 +72,6 @@ class HatCmsApp:
     )
 
     self.status_text = ft.Text(value="", selectable=True)
-    self.preview_field = ft.TextField(
-      label="Markdown Preview",
-      multiline=True,
-      min_lines=20,
-      max_lines=28,
-      expand=True,
-      read_only=True,
-      text_style=ft.TextStyle(font_family="Courier New"),
-    )
-    self.preview_button = ft.Button("Refresh Preview", on_click=self.handle_preview)
-    self.preview_container = ft.Container(content=self.preview_field, col={"md": 6})
     self.command_output = ft.TextField(
       label="Build Output",
       multiline=True,
@@ -91,7 +80,11 @@ class HatCmsApp:
       read_only=True,
     )
 
+    self.form_header = ft.Column(spacing=4)
     self.form_column = ft.Column(spacing=12)
+    self.body_column = ft.Column(spacing=12)
+    self.form_container = ft.Container(content=self.form_column, col={"md": 6}, padding=ft.Padding.only(right=12))
+    self.body_container = ft.Container(content=self.body_column, col={"md": 6}, padding=ft.Padding.only(left=12), visible=False)
 
     # Shared pickers (Wieting pattern): created once, live in page.overlay permanently.
     self._picker_target_field = None
@@ -131,7 +124,6 @@ class HatCmsApp:
         ),
         ft.Row(
           controls=[
-            self.preview_button,
             ft.Button("Save Entry", on_click=self.handle_save),
             ft.OutlinedButton("Clear Form", on_click=self.handle_clear),
             ft.OutlinedButton("Open Content Folder", on_click=self.handle_open_content),
@@ -145,10 +137,11 @@ class HatCmsApp:
           wrap=True,
         ),
         self.status_text,
+        self.form_header,
         ft.ResponsiveRow(
           controls=[
-            ft.Container(content=self.form_column, col={"md": 6}, padding=ft.Padding.only(right=12)),
-            self.preview_container,
+            self.form_container,
+            self.body_container,
           ]
         ),
         self.command_output,
@@ -164,42 +157,44 @@ class HatCmsApp:
     self.field_controls = {}
     self.field_definitions = {}
     entry = ENTRY_DEFINITIONS[self.entry_dropdown.value]
-    controls = [
+    header_controls = [
       ft.Text(
         f"Editing: {entry['label']}",
         size=20,
         weight=ft.FontWeight.W_600,
       )
     ]
+    controls = []
 
     if entry["mode"] == "folder":
-      controls.append(
+      header_controls.append(
         ft.Text(
           "Folder-based entries create or overwrite a file in the target collection directory.",
           size=12,
         )
       )
     else:
-      controls.append(
+      header_controls.append(
         ft.Text(
           f"This entry writes directly to {entry['path']}.",
           size=12,
         )
       )
 
+    body_controls = []
     for field in entry["fields"]:
       control, value_control = self.make_control(field)
       self.field_controls[field["name"]] = value_control
       self.field_definitions[field["name"]] = field
-      controls.append(control)
+      if field["type"] == "markdown":
+        body_controls.append(control)
+      else:
+        controls.append(control)
 
-    has_markdown = any(field["type"] == "markdown" for field in entry["fields"])
-    self.preview_button.visible = has_markdown
-    self.preview_container.visible = has_markdown
-    if not has_markdown:
-      self.preview_field.value = ""
-
+    self.form_header.controls = header_controls
     self.form_column.controls = controls
+    self.body_column.controls = body_controls
+    self.body_container.visible = bool(body_controls)
     self.page.update()
 
   def make_control(self, field):
@@ -303,6 +298,7 @@ class HatCmsApp:
       "multiline": field["type"] == "markdown",
       "min_lines": 10 if field["type"] == "markdown" else None,
       "max_lines": 18 if field["type"] == "markdown" else None,
+      "text_vertical_align": ft.VerticalAlignment.START if field["type"] == "markdown" else None,
       "expand": True,
       "on_change": self.handle_live_change,
     }
@@ -336,27 +332,32 @@ class HatCmsApp:
           )
         else:
           self.set_status("No PDF selected yet.", ft.Colors.BLUE_700)
-        self.preview_field.value = ""
+      elif self.entry_dropdown.value == "event":
+        selected_details = values.get("event_details_pdf", "").strip()
+        if selected_details:
+          details_target = self.get_event_details_pdf_target_path(values)
+          self.set_status(
+            f"Event Details PDF: {selected_details} | Target file: {target_path} | Embedded Details: {details_target}",
+            ft.Colors.BLUE_700,
+          )
+        else:
+          self.set_status(f"Target file: {target_path}", ft.Colors.BLUE_700)
       elif any(field["type"] == "pdf" for field in entry["fields"]):
         selected_pdf = values.get("pdf_file", "").strip()
         if selected_pdf:
           self.set_status(f"Source PDF: {selected_pdf} | Target file: {target_path}", ft.Colors.BLUE_700)
         else:
           self.set_status("No PDF selected yet.", ft.Colors.BLUE_700)
-        self.preview_field.value = ""
       else:
-        self.preview_field.value = render_markdown(self.entry_dropdown.value, values)
+        # Render to validate form data and frontmatter generation, without displaying preview text.
+        render_markdown(self.entry_dropdown.value, values)
         self.set_status(f"Target file: {target_path}", ft.Colors.BLUE_700)
     except Exception as error:
-      self.preview_field.value = ""
       self.set_status(str(error), ft.Colors.ORANGE_700)
 
     self.page.update()
 
   def handle_live_change(self, _event):
-    self.refresh_preview()
-
-  def handle_preview(self, _event):
     self.refresh_preview()
 
   def handle_pick_pdf(self, field_name):
@@ -421,7 +422,22 @@ class HatCmsApp:
         render_values["pdf_embed_src"] = f"./../../pdfs/{pdf_target_path.name}"
         content = render_markdown(self.entry_dropdown.value, render_values)
         target_path.write_text(content, encoding="utf-8")
-        self.preview_field.value = content
+      elif self.entry_dropdown.value == "event":
+        render_values = dict(values)
+        source_details = Path(values.get("event_details_pdf", "").strip()) if values.get("event_details_pdf", "").strip() else None
+        if source_details:
+          if source_details.suffix.lower() != ".pdf":
+            raise ValueError("Event Details must be a PDF file.")
+          if not source_details.exists():
+            raise ValueError("Selected Event Details PDF does not exist.")
+
+          details_target_path = self.get_event_details_pdf_target_path(values)
+          details_target_path.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copy2(source_details, details_target_path)
+          render_values["eventDetailsPdf"] = f"/pdfs/{details_target_path.name}"
+
+        content = render_markdown(self.entry_dropdown.value, render_values)
+        target_path.write_text(content, encoding="utf-8")
       elif any(field["type"] == "pdf" for field in entry["fields"]):
         source_pdf = Path(values.get("pdf_file", "").strip())
         if source_pdf.suffix.lower() != ".pdf":
@@ -430,11 +446,9 @@ class HatCmsApp:
           raise ValueError("Selected PDF file does not exist.")
 
         shutil.copy2(source_pdf, target_path)
-        self.preview_field.value = ""
       else:
         content = render_markdown(self.entry_dropdown.value, values)
         target_path.write_text(content, encoding="utf-8")
-        self.preview_field.value = content
 
       status_message = f"Saved {target_path}"
       status_color = ft.Colors.GREEN_700
@@ -453,6 +467,11 @@ class HatCmsApp:
       self.set_status(str(error), ft.Colors.RED_700)
 
     self.page.update()
+
+  def get_event_details_pdf_target_path(self, values):
+    site_root = resolve_site_root(PROJECT_ROOT, self.site_root_field.value)
+    target_path = build_target_path(PROJECT_ROOT, self.site_root_field.value, "event", values)
+    return site_root / "static" / "pdfs" / f"{target_path.stem}-details.pdf"
 
   def handle_pick_date(self, field_name):
     control = self.field_controls.get(field_name)
