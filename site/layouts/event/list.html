@@ -1,0 +1,33 @@
+{{- define "main" -}}
+{{ `<!-- ENTER: layouts/event/list.html -->` | safeHTML }}
+
+<!-- {{ range .Pages }} -->
+  <!-- <pre><p>{{ . | jsonify }}</p></pre> -->
+<!-- {{ end }} -->
+
+{{ $customDateFormat := "02.01.2006" }}
+{{ with .Site.Params.customDateFormat }}{{ $customDateFormat = . }}{{ end }}
+
+<div class="container mt-3 mb-3">
+  <div class="mb-3">    
+    <div class="card">
+      <div class="card-body">  
+        <h1>{{ .Title }}</h1>
+        <p>{{ .Content | markdownify }}</p>
+        <ul>
+          {{ range .Pages.ByDate.Reverse }}            
+            {{ `<!-- range .Pages.ByDate.Reverse.: layouts/event/list.html -->` | safeHTML }}
+            {{ if .Params.startTime }}
+              <li>{{ .Date.Format $customDateFormat }} - <a href="{{ .RelPermalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+            {{ else }}
+              <li>Next - <a href="{{ .RelPermalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+            {{ end }}  
+          {{ end }}  
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ `<!-- EXIT: layouts/event/list.html -->` | safeHTML }}
+{{- end -}}

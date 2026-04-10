@@ -52,6 +52,15 @@ npm run build
 
 The built site is written to `dist/`. In production, AWS Amplify should generate that output from repository source on each push.
 
+Hugo-only commands also target the same folder:
+
+```bash
+npm run build:hugo
+npm run start:hugo
+```
+
+Both now write to `dist/` (local repository), which matches the VS Code Local Site path.
+
 ## Default Workflow
 
 1. Run `./run.sh`.
@@ -116,3 +125,4 @@ python -m unittest test_cms_core.py
 - `npm run build` remains the canonical local verification step for the deployable site output.
 - In production, AWS Amplify should rebuild from source instead of consuming files manually uploaded from a local machine.
 - If you point the CMS at a different site root, that affects where content is written, not how this repository's own `npm run build` behaves.
+- If Local Site opens a blank page, rebuild with `npm run build:hugo` and refresh the localhost tab.

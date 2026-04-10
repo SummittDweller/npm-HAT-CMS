@@ -1,0 +1,25 @@
+{{- define "main" -}}
+{{ `<!-- enter: layouts/education/list.html -->` | safeHTML }}
+
+<div class="container mt-3 mb-3">
+    {{ $paginator := .Paginate ( where .Site.RegularPages.ByPublishDate.Reverse "Type" "in" (slice "education")) }}
+
+    {{ if .Site.Params.startPageColumns }}
+        <div class="card-columns">
+            {{ range $paginator.Pages }}
+                {{- partial "content_index.html" . -}}
+            {{ end }}
+        </div>
+    {{ else }}
+        {{ range $paginator.Pages }}
+            <div class="mb-3">
+                {{- partial "content_index.html" . -}}
+            </div>
+        {{ end }}
+    {{ end }}
+
+    {{ template "_internal/pagination.html" . }}
+</div>
+
+{{ `<!-- exit: layouts/education/list.html -->` | safeHTML }}
+{{- end -}}

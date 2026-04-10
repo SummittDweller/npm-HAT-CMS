@@ -1,2 +1,116 @@
-languageCode = "en-us"
-title = "npm-HAT CMS - Hometown Action Team Content Manager"
+languageCode = "en"
+title = "Tama-Toledo HAT - Hometown Action Team"
+defaultContentLanguage = "en"
+enableEmoji = true
+enableRobotsTXT = true
+enableInlineShortcodes = true
+
+[markup]
+	[markup.goldmark]
+		[markup.goldmark.renderer]
+			unsafe = true
+
+[sitemap]
+	changefreq = "weekly"
+	priority = 0.5
+
+[permalinks]
+	posts = "/:year/:month/:slug/"
+	post = "/:year/:month/:slug/"
+	pages = "/:slug/"
+	page = "/:slug/"
+
+[params]
+	bannerImage = "https://tamatoledocv.blob.core.windows.net/cv-resources/HAT-Site-Banner-with-Crossing-Image.png"
+	description = "Copyright © 2025. All Rights Reserved. Original design by Mark A. McFate"
+	images = ["logo.jpg", "banner1.png", "Banner-with-HH-logo.png"]
+	alwaysExpandMenu = true
+	customDateFormat = "Monday, January 2, 2006"
+	hideReadingTime = true
+	author = ["Mark McFate"]
+
+	[params.social]
+		email = "cv@summittservices.com"
+		facebook = "tamatoledohometownactionteam"
+
+[[menu.main]]
+	identifier = "about"
+	name = "About Us"
+	url = "/about/"
+	weight = 10
+	pre = "<i class='fas fa-address-card'></i>"
+
+[[menu.main]]
+	identifier = "plan"
+	name = "Plans"
+	url = "/plan/"
+	weight = 15
+	pre = "<i class='fas fa-drafting-compass'></i>"
+
+[[menu.main]]
+	identifier = "event"
+	name = "Events"
+	url = "/event/"
+	weight = 20
+	pre = "<i class='fas fa-align-justify'></i>"
+
+[[menu.main]]
+	identifier = "document"
+	name = "Documents"
+	url = "/document/"
+	weight = 25
+	pre = "<i class='far fa-file-pdf'></i>"
+
+[[menu.main]]
+	identifier = "education"
+	name = "Education"
+	url = "/education/"
+	weight = 27
+	pre = "<i class='fas fa-school'></i>"
+
+[[menu.main]]
+	identifier = "moove"
+	name = "Let's Moove!"
+	url = "/moove/"
+	weight = 29
+	pre = "<i class='fas fa-shoe-prints'></i>"
+
+[[menu.footer]]
+	identifier = "about"
+	name = "About"
+	url = "/about/"
+	weight = 10
+	pre = "<i class='fas fa-address-card'></i>"
+
+[[menu.footer]]
+	identifier = "categories"
+	name = "Categories"
+	url = "/categories/"
+	weight = 30
+	pre = "<i class='fas fa-tags'></i>"
+
+[taxonomies]
+	category = "categories"
+
+[privacy.vimeo]
+	disable = false
+	simple = true
+
+[privacy.twitter]
+	disable = false
+	enableDNT = true
+	simple = true
+
+[privacy.instagram]
+	disable = false
+	simple = true
+
+[privacy.youtube]
+	disable = false
+	privacyEnhanced = true
+
+[services.instagram]
+	disableInlineCSS = true
+
+[services.twitter]
+	disableInlineCSS = true

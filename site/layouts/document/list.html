@@ -1,0 +1,58 @@
+{{- define "main" -}}
+{{ `<!-- enter: layouts/document/list.html -->` | safeHTML }}
+
+
+{{ $customDateFormat := "02.01.2006" }}
+{{ with .Site.Params.customDateFormat }}{{ $customDateFormat = . }}{{ end }}
+{{ $sitetitle := (.Title) }}
+
+<div class="container mt-3 mb-3">
+    {{ if .Site.Params.showListsGrouped }}
+        {{ `<!-- if .Site.Params.showListsGrouped: layouts/document/list.html -->` | safeHTML }}
+        <div class="mb-3">       
+            <div class="card">
+                <div class="card-body">
+                    <h1>{{ $sitetitle }}</h1>
+                    {{ range $key, $value := .Pages.GroupByDate "2006" }}
+                      {{ `<!-- range $key, $value := .Pages.GroupByDate "2006": layouts/document/list.html -->` | safeHTML }}
+                        <a href="#{{ .Key | urlize }}" class="badge badge-primary"><span>{{ .Key }}</span> <span class="badge badge-light">{{ len .Pages }}</span></a>
+                    {{ end}}
+                </div>
+            </div>
+        </div>
+        {{ range .Pages.GroupByDate "2006" }} 
+          {{ `<!-- range .Pages.GroupByDate "2006": layouts/document/list.html -->` | safeHTML }}
+            <div class="mb-3">    
+                <div class="card">
+                    <div class="card-body">  
+                        <h2 id="{{ .Key | urlize }}">{{ .Key }}</h2>
+                        <ul>
+                            {{ range .Pages }}
+                                <li>{{ .PublishDate.Format $customDateFormat }} - <a href="{{ .RelPermalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+                            {{ end}}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {{ end }}
+    {{ else }}
+      {{ `<!-- else: layouts/document/list.html -->` | safeHTML }}
+        <div class="mb-3">    
+            <div class="card">
+                <div class="card-body">  
+                    <h1>{{ .Title }}</h1>
+                    <p>{{ .Content | markdownify }}</p>
+                    <ul>
+                        {{ range .Pages.ByWeight }}
+                          {{ `<!-- range .Pages.ByWeight: layouts/document/list.html -->` | safeHTML }}
+                            <li>{{ .PublishDate.Format $customDateFormat }} - <a href="{{ .RelPermalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+                        {{ end}}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+</div>
+
+{{ `<!-- exit: layouts/document/list.html -->` | safeHTML }}
+{{- end -}}

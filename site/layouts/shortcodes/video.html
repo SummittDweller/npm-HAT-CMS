@@ -1,0 +1,60 @@
+<!-- video.html... from https://eddmann.com/posts/building-a-video-hugo-shortcode-for-local-and-remote-content/ -->
+{{- $source := $.Get "src" -}}
+{{- if not $source -}}
+  {{- errorf "Video 'src' must be supplied" -}}
+{{- end -}}
+{{- $video := or ($.Page.Resources.GetMatch $source) (resources.GetMatch $source) -}}
+{{- $type := $.Get "type" -}}
+{{- if $video -}}
+  {{- $type = $type | default $video.MediaType.Type -}}
+{{- end -}}
+{{- if not $type -}}
+  {{- errorf "Video 'type' must be supplied" -}}
+{{- end -}}
+{{- $caption := $.Get "caption" -}}
+{{- $preload := $.Get "preload" | default "metadata" -}}
+{{- $controls := $.Get "controls" | default true -}}
+{{- $muted := $.Get "muted" -}}
+{{- $loop := $.Get "loop" -}}
+{{- $autoplay := $.Get "autoplay" -}}
+{{- $poster := $.Get "poster" -}}
+
+<div class="video-container" style="width:100%;">
+{{- if $caption -}}
+  <figure>
+{{- end -}}
+    {{- if $video -}}
+      {{- $video = $video.Resize "1000x" -}}
+    {{- end -}}
+    {{- if $poster -}}
+      {{- $poster = $poster.Resize "1000x" -}}
+    {{- end -}}
+    {{- if $video -}}
+      {{- $video = $video.Fill "1000x" -}}
+    {{- end -}}
+    {{- if $poster -}}
+      {{- $poster = $poster.Fill "1000x" -}}
+    {{- end -}}
+    {{- if $poster -}}
+      <img src="{{ with $poster }}{{ .RelPermalink }}{{ else }}{{ $source }}{{ end }}" alt="Video poster">
+    {{- end -}}
+    {{- if $video -}}
+      {{- $video = $video.Resize "1000x" -}}
+    {{- end -}}
+    <video preload="{{ $preload }}"
+      {{- if $controls }} controls{{ end -}}
+      {{- if $muted }} muted{{ end -}}
+      {{- if $loop }} loop{{ end -}}
+      {{- if $autoplay }} autoplay{{ end -}}
+      {{- with $poster }} poster="{{ . }}"{{ end -}}>
+      <source
+        src="{{ with $video }}{{ .RelPermalink }}{{ else }}{{ $source }}{{ end }}"
+        type="{{ $type }}"
+      >
+      Your browser does not support the video element.
+    </video>
+{{- with $caption -}}
+  <figcaption>{{ . }}</figcaption>
+</figure>
+{{- end -}}
+</div>

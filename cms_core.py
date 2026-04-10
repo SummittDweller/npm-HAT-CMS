@@ -42,6 +42,8 @@ ENTRY_DEFINITIONS = {
     "mode": "folder",
     "folder": "content/plan",
     "filename_mode": "slug",
+    "pdf_embed": True,
+    "pdf_asset_folder": "pdfs",
     "fields": [
       {"name": "title", "label": "Title", "type": "string", "required": True},
       {"name": "filename_slug", "label": "Filename Slug", "type": "string", "required": False, "store": False},
@@ -51,7 +53,7 @@ ENTRY_DEFINITIONS = {
       {"name": "categories", "label": "Categories", "type": "list", "required": False, "hint": "Comma-separated values."},
       {"name": "weight", "label": "Weight", "type": "number", "required": False},
       {"name": "draft", "label": "Draft", "type": "boolean", "required": False, "default": False, "always_write": True},
-      {"name": "body", "label": "Body", "type": "markdown", "required": False, "store": False},
+      {"name": "pdf_file", "label": "PDF File", "type": "pdf", "required": True, "store": False, "hint": "Select a local PDF file."},
     ],
   },
   "document": {
@@ -60,12 +62,14 @@ ENTRY_DEFINITIONS = {
     "folder": "content/document",
     "filename_mode": "dated_slug",
     "date_field": "date",
+    "pdf_embed": True,
+    "pdf_asset_folder": "pdfs",
     "fields": [
       {"name": "title", "label": "Title", "type": "string", "required": True},
       {"name": "filename_slug", "label": "Filename Slug", "type": "string", "required": False, "store": False},
       {"name": "date", "label": "Date", "type": "date", "required": True, "hint": "Example: 2026-04-08"},
       {"name": "draft", "label": "Draft", "type": "boolean", "required": False, "default": False, "always_write": True},
-      {"name": "body", "label": "Body", "type": "markdown", "required": False, "store": False},
+      {"name": "pdf_file", "label": "PDF File", "type": "pdf", "required": True, "store": False, "hint": "Select a local PDF file."},
     ],
   },
   "education": {
@@ -218,6 +222,7 @@ def build_frontmatter(entry_key, values):
 def build_target_path(project_root, site_root_value, entry_key, values):
   entry = ENTRY_DEFINITIONS[entry_key]
   site_root = resolve_site_root(project_root, site_root_value)
+  extension = entry.get("extension", ".md")
 
   if entry["mode"] == "fixed":
     return site_root / entry["path"]
@@ -228,11 +233,22 @@ def build_target_path(project_root, site_root_value, entry_key, values):
 
   if entry["filename_mode"] == "dated_slug":
     date_prefix = extract_date_prefix(values.get(entry["date_field"], ""))
-    filename = f"{date_prefix}_{slug_value}.md"
+    filename = f"{date_prefix}_{slug_value}{extension}"
   else:
-    filename = f"{slug_value}.md"
+    filename = f"{slug_value}{extension}"
 
   return site_root / entry["folder"] / filename
+
+
+def build_pdf_asset_path(project_root, site_root_value, entry_key, values):
+  entry = ENTRY_DEFINITIONS[entry_key]
+  if not entry.get("pdf_embed"):
+    raise ValueError(f"{entry_key} does not support embedded PDF assets.")
+
+  site_root = resolve_site_root(project_root, site_root_value)
+  target_path = build_target_path(project_root, site_root_value, entry_key, values)
+  pdf_folder = entry.get("pdf_asset_folder", "pdfs")
+  return site_root / pdf_folder / f"{target_path.stem}.pdf"
 
 
 def render_markdown(entry_key, values):
@@ -242,6 +258,12 @@ def render_markdown(entry_key, values):
 
   frontmatter = build_frontmatter(entry_key, values)
   body = str(values.get("body") or "").rstrip()
+  if ENTRY_DEFINITIONS[entry_key].get("pdf_embed"):
+    embed_src = str(values.get("pdf_embed_src") or "").strip()
+    if embed_src:
+      embed_tag = f'<embed width=100% height=1000 src="{embed_src}"></embed>'
+      body = f"{body}\n\n{embed_tag}".strip() if body else embed_tag
+
   yaml_text = yaml.safe_dump(frontmatter, sort_keys=False, default_flow_style=False, allow_unicode=False).strip()
 
   if yaml_text:

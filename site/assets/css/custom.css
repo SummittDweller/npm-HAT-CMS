@@ -1,0 +1,6 @@
+/* Overwrite in your /assets/css/custom.css file */
+
+p > img {
+  max-width: 100%;
+  height: auto;
+}
