@@ -166,7 +166,7 @@ class HatCmsApp:
               tooltip="Build the site locally and open it on localhost in your default browser.",
               on_click=self.handle_build_and_open,
             ),
-            ft.ElevatedButton(
+            ft.Button(
               "Push and Deploy the Site",
               tooltip="Stages all local changes, creates a commit if needed, and pushes to the current branch. Amplify deploys after push.",
               on_click=self.handle_push_and_deploy,
