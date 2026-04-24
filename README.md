@@ -96,9 +96,10 @@ That lets you use this repository as a local editor even if the real site source
 The local CMS currently has full UI support for:
 
 - **Event (Markdown)** - dated folder-based entries with support for publish date, location, expiry date, and markdown body
+- **Post (Markdown on Home Page)** - slug-based markdown entries for the home page feed
 - **Document (PDF)** - dated folder-based entries with embedded PDF support
 
-Other content types (Posts, Plans, Education, Let's Moove page, About page, Calendar page, Contact page) are defined in `cms_core.py` but are disabled in the CMS UI pending full implementation.
+Other content types (Plans, Education, Let's Moove page, About page, Calendar page, Contact page) are defined in `cms_core.py` but are disabled in the CMS UI pending full implementation.
 
 ### Content Type Details
 

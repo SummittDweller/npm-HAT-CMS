@@ -5,15 +5,23 @@
   <!-- <pre><p>{{ . | jsonify }}</p></pre> -->
 <!-- {{ end }} -->
 
+{{ $showCanvaEmbed := true }}
+{{ if isset .Site.Params "homecanvaembedenabled" }}
+    {{ $showCanvaEmbed = .Site.Params.homecanvaembedenabled }}
+{{ end }}
+{{ $homeCanvaEmbedUrl := .Site.Params.homecanvaembedurl | default "https://www.canva.com/design/DAGgmfR_fO4/xE9UDOAcGfdVogOlKKv58Q/view?embed" }}
+
 <!-- Let's Moove Canva embed from Karen -->
+{{ if $showCanvaEmbed }}
 <div class="container mt-3 mb-3">
     <div class="home-canva-embed">
     <iframe loading="lazy" class="home-canva-iframe"
-    src="https://www.canva.com/design/DAGgmfR_fO4/xE9UDOAcGfdVogOlKKv58Q/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen">
+        src="{{ $homeCanvaEmbedUrl }}" allowfullscreen="allowfullscreen" allow="fullscreen">
     </iframe>
     </div>
-    <a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAGgmfR_fO4&#x2F;xE9UDOAcGfdVogOlKKv58Q&#x2F;view?utm_content=DAGgmfR_fO4&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">HAT Fundraising website</a> by Karen Mixdorf
+        <a href="{{ $homeCanvaEmbedUrl }}" target="_blank" rel="noopener">HAT Fundraising website</a> by Karen Mixdorf
 </div>
+{{ end }}
 
 <!-- Let's Moove donations embed from Karen -->
 <div class="container mt-3 mb-3">
