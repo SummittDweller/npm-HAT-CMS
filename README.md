@@ -9,6 +9,10 @@ This repository now follows the same core pattern as `../Wieting-Website-CMS`:
 
 Netlify and the browser-based Decap admin have been removed from this project.
 
+## Latest Changes
+
+- Work log for 2026-04-23: [WORKLOG-2026-04-23.md](WORKLOG-2026-04-23.md)
+
 ## What Changed
 
 The old approach depended on a hosted CMS UI and GitHub authentication flow. That made deployment and content editing tightly coupled to a platform-specific setup.

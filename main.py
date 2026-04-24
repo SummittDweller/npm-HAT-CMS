@@ -166,6 +166,15 @@ class HatCmsApp:
               tooltip="Build the site locally and open it on localhost in your default browser.",
               on_click=self.handle_build_and_open,
             ),
+            ft.ElevatedButton(
+              "Push and Deploy the Site",
+              tooltip="Stages all local changes, creates a commit if needed, and pushes to the current branch. Amplify deploys after push.",
+              on_click=self.handle_push_and_deploy,
+              style=ft.ButtonStyle(
+                bgcolor=ft.Colors.BLUE_700,
+                color=ft.Colors.WHITE,
+              ),
+            ),
           ],
           spacing=12,
           wrap=True,
@@ -808,6 +817,71 @@ class HatCmsApp:
               )
       else:
         self.set_status("Build failed. See output below.", ft.Colors.RED_700)
+    except Exception as error:
+      self.command_output.value = str(error)
+      self.set_status(str(error), ft.Colors.RED_700)
+
+    self.page.update()
+
+  def run_git_command(self, args):
+    return subprocess.run(
+      ["git", *args],
+      cwd=PROJECT_ROOT,
+      capture_output=True,
+      text=True,
+      check=False,
+    )
+
+  def handle_push_and_deploy(self, _event):
+    try:
+      output_blocks = []
+
+      status_result = self.run_git_command(["status", "--porcelain"])
+      if status_result.returncode != 0:
+        error_text = (status_result.stderr or status_result.stdout or "Unable to read git status.").strip()
+        self.command_output.value = error_text
+        self.set_status("Push/deploy failed while checking git status.", ft.Colors.RED_700)
+        self.page.update()
+        return
+
+      if status_result.stdout.strip():
+        add_result = self.run_git_command(["add", "-A"])
+        output_blocks.append("$ git add -A\n" + (add_result.stdout + add_result.stderr).strip())
+        if add_result.returncode != 0:
+          self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+          self.set_status("Push/deploy failed while staging changes.", ft.Colors.RED_700)
+          self.page.update()
+          return
+
+        values = self.collect_values()
+        entry_label = ENTRY_DEFINITIONS.get(self.entry_dropdown.value, {}).get("label", self.entry_dropdown.value)
+        raw_title = str(values.get("title") or "").strip()
+        safe_title = " ".join(raw_title.split())
+        if safe_title:
+          commit_message = f"CMS update: {entry_label} - {safe_title} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+        else:
+          commit_message = f"CMS update: {entry_label} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+        commit_result = self.run_git_command(["commit", "-m", commit_message])
+        output_blocks.append("$ git commit -m \"" + commit_message + "\"\n" + (commit_result.stdout + commit_result.stderr).strip())
+        if commit_result.returncode != 0:
+          combined = (commit_result.stdout + commit_result.stderr).lower()
+          if "nothing to commit" not in combined:
+            self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+            self.set_status("Push/deploy failed while creating commit.", ft.Colors.RED_700)
+            self.page.update()
+            return
+
+      push_result = self.run_git_command(["push"])
+      output_blocks.append("$ git push\n" + (push_result.stdout + push_result.stderr).strip())
+      self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+
+      if push_result.returncode == 0:
+        self.set_status(
+          "Push succeeded. Amplify deployment should start automatically for the connected branch.",
+          ft.Colors.GREEN_700,
+        )
+      else:
+        self.set_status("Push failed. See output below.", ft.Colors.RED_700)
     except Exception as error:
       self.command_output.value = str(error)
       self.set_status(str(error), ft.Colors.RED_700)
