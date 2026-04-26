@@ -1,5 +1,16 @@
 /* Overwrite in your /assets/css/custom.css file */
 
+#site-banner {
+  text-align: center;
+}
+
+#site-banner-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 p > img {
   max-width: 100%;
   height: auto;
