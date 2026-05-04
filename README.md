@@ -197,6 +197,39 @@ The site includes Font Awesome 5.13.0 webfonts:
 python -m unittest test_cms_core.py
 ```
 
+## Updating the Standing Meeting Agenda
+
+The HAT steering committee meeting agenda is embedded as a Google Doc in:
+
+- `site/content/event/standing-agenda.md`
+
+### To update the agenda content
+
+The embedded Google Doc is a published "public on the web" document. Edit it directly in Google Docs — changes are reflected on the site automatically without any CMS or build changes needed.
+
+The current Google Doc URL is:
+```
+https://docs.google.com/document/d/e/2PACX-1vSv7rT3Uu0lu4X8lkhuLReVtSngg-GMYAC43ekeseyq7s5dpQ2Z0pzs_MCZmIhkSukdLHHb6w4onT-g/pub?embedded=true
+```
+
+### To replace the agenda with a new Google Doc
+
+1. In Google Docs, open the new document.
+2. Go to **File > Share > Publish to web**, select **Embed**, and copy the iframe URL.
+3. Open `site/content/event/standing-agenda.md` and replace the `src` URL in the `<iframe>` tag.
+4. Rebuild and deploy: `npm run build`, then commit and push.
+
+### To extend the display period
+
+The file has an `expiryDate` frontmatter field. Once that date passes, Hugo stops publishing the page.
+Update it annually (or as needed) by editing the frontmatter in `site/content/event/standing-agenda.md`:
+
+```yaml
+expiryDate: 2026-12-31
+```
+
+The same Google Doc is also referenced historically in `site/content/document/2024-04-04-meeting.md`.
+
 ## Notes
 
 - The app is intentionally local and file-based. There is no hosted auth flow.

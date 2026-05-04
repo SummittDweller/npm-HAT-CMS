@@ -3,7 +3,7 @@ title: "Steering Committee Meeting"
 publishDate: 2025-01-01T10:54:19-05:00
 location: "See agenda for details"
 draft: false
-expiryDate: 2025-12-31
+expiryDate: 2026-12-31
 --- 
 
 Agenda specifics:  
