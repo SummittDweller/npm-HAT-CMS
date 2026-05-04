@@ -9,6 +9,11 @@ import time
 from datetime import date, datetime, time as dt_time, timedelta
 from urllib.parse import parse_qs, unquote, urlparse
 
+try:
+  import tomllib
+except ImportError:
+  tomllib = None
+
 import flet as ft
 
 try:
@@ -21,6 +26,8 @@ from cms_core import ENTRY_DEFINITIONS, build_pdf_asset_path, build_target_path,
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_SITE_ROOT = PROJECT_ROOT / "site"
+SITE_CONFIG_PATH = PROJECT_ROOT / "site" / "config.toml"
+DEFAULT_HOME_CANVA_EMBED_URL = "https://www.canva.com/design/DAGgmfR_fO4/xE9UDOAcGfdVogOlKKv58Q/view?embed"
 
 if load_dotenv is not None:
   load_dotenv(PROJECT_ROOT / ".env")
@@ -30,6 +37,9 @@ class HatCmsApp:
   def __init__(self, page):
     self.page = page
     self.page.title = "HAT CMS"
+    self.page.theme_mode = ft.ThemeMode.LIGHT
+    self.page.theme = ft.Theme(color_scheme_seed=ft.Colors.BLUE)
+    self.page.bgcolor = ft.Colors.WHITE
     self.page.padding = 20
     self.page.scroll = ft.ScrollMode.AUTO
     self.page.window.width = 1400
@@ -45,6 +55,20 @@ class HatCmsApp:
     self.google_service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", str(PROJECT_ROOT / "google-service-account.json")).strip()
     self.google_calendar_id = self.detect_google_calendar_id()
 
+    embed_enabled, embed_url = self.load_home_canva_embed_settings()
+    self.home_canva_embed_enabled = ft.Checkbox(
+      label="Show Home Page Canva Embed",
+      value=embed_enabled,
+      on_change=self.handle_home_canva_embed_toggle,
+    )
+    self.home_canva_embed_url = ft.TextField(
+      label="Home Canva Embed URL",
+      value=embed_url,
+      width=640,
+      hint_text="Paste Canva embed URL (for example: .../view?embed)",
+      read_only=not embed_enabled,
+    )
+
     self.site_root_field = ft.TextField(
       label="Hugo Site Root",
       value=str(DEFAULT_SITE_ROOT),
@@ -52,8 +76,8 @@ class HatCmsApp:
       hint_text="Defaults to ./site. You can point this at another Hugo site if needed.",
     )
 
-    _enabled_keys = {"event", "document"}
-    _ordered_keys = ["event", "document"] + [
+    _enabled_keys = {"event", "post", "document"}
+    _ordered_keys = ["event", "post", "document"] + [
       k for k in ENTRY_DEFINITIONS if k not in _enabled_keys
     ]
     self.entry_dropdown = ft.Dropdown(
@@ -118,6 +142,16 @@ class HatCmsApp:
           size=14,
         ),
         ft.Row(
+          controls=[
+            self.home_canva_embed_enabled,
+            self.home_canva_embed_url,
+            ft.OutlinedButton("Save Home Embed Settings", on_click=self.handle_save_home_embed_settings),
+          ],
+          spacing=12,
+          vertical_alignment=ft.CrossAxisAlignment.END,
+          wrap=True,
+        ),
+        ft.Row(
           controls=[self.site_root_field, self.entry_dropdown],
           spacing=16,
           vertical_alignment=ft.CrossAxisAlignment.START,
@@ -131,6 +165,15 @@ class HatCmsApp:
               "Local Site",
               tooltip="Build the site locally and open it on localhost in your default browser.",
               on_click=self.handle_build_and_open,
+            ),
+            ft.Button(
+              "Push and Deploy the Site",
+              tooltip="Stages all local changes, creates a commit if needed, and pushes to the current branch. Amplify deploys after push.",
+              on_click=self.handle_push_and_deploy,
+              style=ft.ButtonStyle(
+                bgcolor=ft.Colors.BLUE_700,
+                color=ft.Colors.WHITE,
+              ),
             ),
           ],
           spacing=12,
@@ -780,6 +823,71 @@ class HatCmsApp:
 
     self.page.update()
 
+  def run_git_command(self, args):
+    return subprocess.run(
+      ["git", *args],
+      cwd=PROJECT_ROOT,
+      capture_output=True,
+      text=True,
+      check=False,
+    )
+
+  def handle_push_and_deploy(self, _event):
+    try:
+      output_blocks = []
+
+      status_result = self.run_git_command(["status", "--porcelain"])
+      if status_result.returncode != 0:
+        error_text = (status_result.stderr or status_result.stdout or "Unable to read git status.").strip()
+        self.command_output.value = error_text
+        self.set_status("Push/deploy failed while checking git status.", ft.Colors.RED_700)
+        self.page.update()
+        return
+
+      if status_result.stdout.strip():
+        add_result = self.run_git_command(["add", "-A"])
+        output_blocks.append("$ git add -A\n" + (add_result.stdout + add_result.stderr).strip())
+        if add_result.returncode != 0:
+          self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+          self.set_status("Push/deploy failed while staging changes.", ft.Colors.RED_700)
+          self.page.update()
+          return
+
+        values = self.collect_values()
+        entry_label = ENTRY_DEFINITIONS.get(self.entry_dropdown.value, {}).get("label", self.entry_dropdown.value)
+        raw_title = str(values.get("title") or "").strip()
+        safe_title = " ".join(raw_title.split())
+        if safe_title:
+          commit_message = f"CMS update: {entry_label} - {safe_title} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+        else:
+          commit_message = f"CMS update: {entry_label} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+        commit_result = self.run_git_command(["commit", "-m", commit_message])
+        output_blocks.append("$ git commit -m \"" + commit_message + "\"\n" + (commit_result.stdout + commit_result.stderr).strip())
+        if commit_result.returncode != 0:
+          combined = (commit_result.stdout + commit_result.stderr).lower()
+          if "nothing to commit" not in combined:
+            self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+            self.set_status("Push/deploy failed while creating commit.", ft.Colors.RED_700)
+            self.page.update()
+            return
+
+      push_result = self.run_git_command(["push"])
+      output_blocks.append("$ git push\n" + (push_result.stdout + push_result.stderr).strip())
+      self.command_output.value = "\n\n".join(block for block in output_blocks if block.strip())
+
+      if push_result.returncode == 0:
+        self.set_status(
+          "Push succeeded. Amplify deployment should start automatically for the connected branch.",
+          ft.Colors.GREEN_700,
+        )
+      else:
+        self.set_status("Push failed. See output below.", ft.Colors.RED_700)
+    except Exception as error:
+      self.command_output.value = str(error)
+      self.set_status(str(error), ft.Colors.RED_700)
+
+    self.page.update()
+
   def ensure_local_site_server(self, output_dir):
     if (
       self.local_site_server is not None
@@ -827,6 +935,92 @@ class HatCmsApp:
   def set_status(self, message, color):
     self.status_text.value = message
     self.status_text.color = color
+
+  def sync_home_canva_controls(self):
+    self.home_canva_embed_url.read_only = not bool(self.home_canva_embed_enabled.value)
+
+  def handle_home_canva_embed_toggle(self, _event):
+    self.sync_home_canva_controls()
+    self.page.update()
+
+  def load_home_canva_embed_settings(self):
+    enabled = True
+    url = DEFAULT_HOME_CANVA_EMBED_URL
+
+    if SITE_CONFIG_PATH.exists():
+      config_text = SITE_CONFIG_PATH.read_text(encoding="utf-8")
+
+      if tomllib is not None:
+        try:
+          parsed = tomllib.loads(config_text)
+          params = parsed.get("params", {})
+          enabled = bool(params.get("homeCanvaEmbedEnabled", enabled))
+          configured_url = self.extract_embed_url(str(params.get("homeCanvaEmbedUrl", "")).strip())
+          if configured_url:
+            url = configured_url
+          return enabled, url
+        except Exception:
+          pass
+
+      enabled_match = re.search(r"^\s*homeCanvaEmbedEnabled\s*=\s*(true|false)\s*$", config_text, flags=re.IGNORECASE | re.MULTILINE)
+      if enabled_match:
+        enabled = enabled_match.group(1).lower() == "true"
+
+      url_match = re.search(r"^\s*homeCanvaEmbedUrl\s*=\s*\"([^\"]*)\"\s*$", config_text, flags=re.MULTILINE)
+      if url_match and url_match.group(1).strip():
+        url = self.extract_embed_url(url_match.group(1).strip())
+
+    return enabled, url
+
+  def upsert_config_param(self, config_text, key, value_literal):
+    pattern = rf"^(\s*{re.escape(key)}\s*=\s*).*$"
+    replacement = rf"\1{value_literal}"
+    updated_text, count = re.subn(pattern, replacement, config_text, flags=re.MULTILINE)
+    if count > 0:
+      return updated_text
+
+    params_match = re.search(r"^\[params\]\s*$", config_text, flags=re.MULTILINE)
+    if not params_match:
+      return config_text
+
+    insert_at = params_match.end()
+    return f"{config_text[:insert_at]}\n\t{key} = {value_literal}{config_text[insert_at:]}"
+
+  def extract_embed_url(self, raw_value):
+    text = (raw_value or "").strip()
+    if not text:
+      return ""
+
+    iframe_src = re.search(r'src\s*=\s*["\']([^"\']+)["\']', text, flags=re.IGNORECASE)
+    if iframe_src:
+      return iframe_src.group(1).strip()
+
+    return text
+
+  def handle_save_home_embed_settings(self, _event):
+    try:
+      if not SITE_CONFIG_PATH.exists():
+        raise ValueError(f"Missing config file: {SITE_CONFIG_PATH}")
+
+      embed_url = self.extract_embed_url(self.home_canva_embed_url.value)
+      if not embed_url:
+        raise ValueError("Home Canva Embed URL is required.")
+
+      self.home_canva_embed_url.value = embed_url
+
+      enabled_literal = "true" if bool(self.home_canva_embed_enabled.value) else "false"
+      url_literal = f'"{embed_url.replace("\\", "\\\\").replace("\"", "\\\"")}"'
+
+      config_text = SITE_CONFIG_PATH.read_text(encoding="utf-8")
+      config_text = self.upsert_config_param(config_text, "homeCanvaEmbedEnabled", enabled_literal)
+      config_text = self.upsert_config_param(config_text, "homeCanvaEmbedUrl", url_literal)
+      SITE_CONFIG_PATH.write_text(config_text, encoding="utf-8")
+
+      self.set_status("Saved home page Canva embed settings to site/config.toml.", ft.Colors.GREEN_700)
+    except Exception as error:
+      self.set_status(str(error), ft.Colors.RED_700)
+
+    self.page.update()
 
 
 def main():

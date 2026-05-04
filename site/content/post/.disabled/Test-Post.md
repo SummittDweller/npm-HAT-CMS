@@ -16,7 +16,7 @@ Posts can contain any _Markdown_ (`.md`) elements like tables, and block quotes.
 
 | Number | Description |
 | --- | --- |
-| 1 | This is a simple 2-column table. |  
+| 1 | This is a simple two-column table. |  
 
 &nbsp;  
 

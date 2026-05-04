@@ -7,6 +7,11 @@
 
     <div class="container mt-3 mb-3">
         {{- partial "content.html" . -}}
+      {{- if eq .File.BaseFileName "about" -}}
+      <div class="text-center text-dark mt-3 mb-2">
+        <small>Site last compiled: {{ now.Format "January 2, 2006 at 3:04 PM MST" }}</small>
+      </div>
+      {{- end -}}
     </div>
 
   {{ `<!-- EXIT: <theme>/layouts/_default/single.html -->` | safeHTML }}

@@ -25,7 +25,7 @@ ENTRY_DEFINITIONS = {
     ],
   },
   "post": {
-    "label": "Post",
+    "label": "Post (Markdown on Home Page)",
     "mode": "folder",
     "folder": "content/post",
     "filename_mode": "slug",

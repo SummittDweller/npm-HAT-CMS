@@ -27,6 +27,8 @@ enableInlineShortcodes = true
 	alwaysExpandMenu = true
 	customDateFormat = "Monday, January 2, 2006"
 	hideReadingTime = true
+	homeCanvaEmbedEnabled = false
+	homeCanvaEmbedUrl = "https://www.canva.com/design/DAGgmfR_fO4/xE9UDOAcGfdVogOlKKv58Q/view?embed"
 	author = ["Mark McFate"]
 
 	[params.social]
