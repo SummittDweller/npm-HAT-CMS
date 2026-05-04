@@ -1,9 +1,9 @@
 ---
-title: "Steering Committee Meeting"
-publishDate: 2025-01-01T10:54:19-05:00
+title: "HAT Meeting"
+publishDate: 2099-12-31
 location: "See agenda for details"
 draft: false
-expiryDate: 2026-12-31
+expiryDate: 2099-12-31
 --- 
 
 Agenda specifics:  
